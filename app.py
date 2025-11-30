@@ -5,7 +5,7 @@ import os
 
 app = Flask(__name__)
 
-# === Load Naive Bayes Model, Scaler, and Accuracy ===
+# === Load Naive Bayes Model & Scaler ===
 nb_dir = os.path.join(os.path.dirname(__file__), 'naive_bayes')
 
 with open(os.path.join(nb_dir, 'naive_bayes_data_wine.pkl'), 'rb') as f:
@@ -14,21 +14,17 @@ with open(os.path.join(nb_dir, 'naive_bayes_data_wine.pkl'), 'rb') as f:
 with open(os.path.join(nb_dir, 'wine_quality_scaler_naive_bayes.pkl'), 'rb') as f:
     scaler = pickle.load(f)
 
-with open(os.path.join(nb_dir, 'nb_accuracy.pkl'), 'rb') as f:
-    NB_ACCURACY = pickle.load(f)
-
-
-# === Load ID3 Model and Accuracy ===
+# === Load ID3 Model ===
 id3_dir = os.path.join(os.path.dirname(__file__), 'id3')
 
 with open(os.path.join(id3_dir, 'id3_data_wine.pkl'), 'rb') as f:
     id3_model = pickle.load(f)
 
-with open(os.path.join(id3_dir, 'id3_accuracy.pkl'), 'rb') as f:
-    ID3_ACCURACY = pickle.load(f)
+# === Akurasi sesuai hasil notebook ===
+NB_ACCURACY = 0.618   # akurasi Naive Bayes hasil console ipynb
+ID3_ACCURACY = 0.615  # akurasi Decision Tree ID3 hasil console ipynb
 
-
-# === Nama fitur sesuai notebook ===
+# === Nama fitur sesuai notebook (X = df.drop([...]) ) ===
 feature_names = [
     'fixed acidity', 
     'volatile acidity',
@@ -60,15 +56,20 @@ def id3_page():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
+        # Ambil input user
         input_data = [float(request.form[f]) for f in feature_names]
+
+        # Konversi array
         input_array = np.array(input_data).reshape(1, -1)
 
         # Scaling wajib untuk Naive Bayes
         input_scaled = scaler.transform(input_array)
 
+        # Prediksi
         prediction = nb_model.predict(input_scaled)[0]
         probabilities = nb_model.predict_proba(input_scaled)[0]
 
+        # Hasil probabilitas per kelas
         prob_dict = {int(k): round(v, 4) for k, v in zip(nb_model.classes_, probabilities)}
 
         return render_template(
@@ -92,8 +93,10 @@ def predict():
 def predict_id3():
     try:
         input_data = [float(request.form[f]) for f in feature_names]
+
         input_array = np.array(input_data).reshape(1, -1)
 
+        # ID3 TIDAK PERLU SCALING
         prediction = id3_model.predict(input_array)[0]
         probabilities = id3_model.predict_proba(input_array)[0]
 
@@ -114,12 +117,6 @@ def predict_id3():
             accuracy=ID3_ACCURACY,
             error=str(e)
         )
-
-
-# === Wajib untuk Vercel ===
-def handler(request):
-    return app(request)
-
 
 if __name__ == '__main__':
     app.run(debug=True)
