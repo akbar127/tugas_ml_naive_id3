@@ -1,3 +1,10 @@
-numpy
+Flask
+gunicorn  # Opsional: Untuk production WSGI server
+
+# Machine Learning & Data Science
 scikit-learn
 pandas
+numpy
+
+# Utilities dan Serialization
+joblib
