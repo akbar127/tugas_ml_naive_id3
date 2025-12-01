@@ -5,7 +5,7 @@ import os
 
 app = Flask(__name__)
 
-# === Load Naive Bayes Model & Scaler ===
+# === Load Naive Bayes Model & Scaler ambil model.pkl dengan path / folder dinamis ===
 nb_dir = os.path.join(os.path.dirname(__file__), 'naive_bayes')
 
 with open(os.path.join(nb_dir, 'naive_bayes_data_wine.pkl'), 'rb') as f:
@@ -28,7 +28,7 @@ with open(os.path.join(id3_dir, 'id3_accuracy.pkl'), 'rb') as f:
 
 
 
-# === Nama fitur sesuai notebook (X = df.drop([...]) ) ===
+# === Nama fitur sesuai notebook (X = df.drop([...]) ) variabel independent===
 feature_names = [
     'fixed acidity', 
     'volatile acidity',
@@ -57,23 +57,25 @@ def id3_page():
     return render_template('id3.html', feature_names=feature_names, accuracy=ID3_ACCURACY)
 
 # === Prediksi NAIVE BAYES ===
+
+# endpoint post / kirim / url predict
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
         # Ambil input user
         input_data = [float(request.form[f]) for f in feature_names]
 
-        # Konversi array
+        # Konversi array 
         input_array = np.array(input_data).reshape(1, -1)
 
         # Scaling wajib untuk Naive Bayes
         input_scaled = scaler.transform(input_array)
 
-        # Prediksi
+        # Prediksi dan probabilitas dalam array 1D
         prediction = nb_model.predict(input_scaled)[0]
         probabilities = nb_model.predict_proba(input_scaled)[0]
 
-        # Hasil probabilitas per kelas
+        # Hasil probabilitas per kelas dalam bentuk dictionary 4 decimal
         prob_dict = {int(k): round(v, 4) for k, v in zip(nb_model.classes_, probabilities)}
 
         return render_template(
@@ -102,16 +104,16 @@ def predict_id3():
 
         # ID3 TIDAK PERLU SCALING
         prediction = id3_model.predict(input_array)[0]
-        probabilities = id3_model.predict_proba(input_array)[0]
+        
 
-        prob_dict = {int(k): round(v, 4) for k, v in zip(id3_model.classes_, probabilities)}
+        
 
         return render_template(
             'id3.html',
             feature_names=feature_names,
             accuracy=ID3_ACCURACY,
             prediction=int(prediction),
-            probabilities=prob_dict
+            
         )
 
     except Exception as e:
